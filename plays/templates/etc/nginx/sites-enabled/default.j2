@@ -1,0 +1,23 @@
+#jinja2: lstrip_blocks: 'True'
+server {
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  ssl_certificate     /etc/ssl/certs/ssl-cert-snakeoil.pem;
+  ssl_certificate_key /etc/ssl/private/ssl-cert-snakeoil.key;
+
+  access_log /var/log/nginx/reverse-access.log;
+  error_log /var/log/nginx/reverse-error.log;
+  {% for app in app_opts %}
+  location /{{ app.name }} {
+      proxy_pass http://localhost:{{ app.port }};
+  }
+  {% endfor %}
+}
+
+server {
+    listen 80 default_server;
+
+    server_name _;
+
+    return 301 https://$host$request_uri;
+}

@@ -1,0 +1,17 @@
+---
+common_packages:
+- vim
+- ripgrep
+- ssl-cert
+flask_packages:
+- python3-flask
+- python3-flask-sqlalchemy
+db:
+  user: app
+  pass: app
+  name: app
+app_opts:
+- { name: "go-app1", port: "8080" }
+- { name: "go-app2", port: "8081" }
+- { name: "osna", port: "8082" }
+- { name: "ostfriesland", port: "8083" }

@@ -1,0 +1,27 @@
+frontend appsrv_http
+    bind {{ ansible_host }}:80
+    option tcplog
+    mode tcp
+    default_backend appsrv_backend_http
+
+frontend appsrv_https
+    bind {{ ansible_host }}:443
+    option tcplog
+    mode tcp
+    default_backend appsrv_backend_https
+
+backend appsrv_backend_http
+    mode tcp
+    balance roundrobin
+    option tcp-check
+    {% for host in groups['appsrv'] %}
+    server {{ host }} {{ hostvars[host]['ansible_host'] }}:80 check fall 3 rise 2
+    {% endfor %}
+
+backend appsrv_backend_https
+    mode tcp
+    balance random
+    option tcp-check
+    {% for host in groups['appsrv'] %}
+    server {{ host }} {{ hostvars[host]['ansible_host'] }}:443 check fall 3 rise 2
+    {% endfor %}
