@@ -1,0 +1,58 @@
+---
+- name: Common Playbook
+  hosts: all
+  become: true
+  tasks:
+  - name: Disable SELinux
+    selinux:
+      state: permissive
+      policy: targeted
+    when: ansible_os_family == "RedHat"
+  - apt:
+      update_cache: true
+      cache_valid_time: 86400
+    when: ansible_os_family == 'Debian'
+
+  - hostname:
+      name: "{{ inventory_hostname }}"
+
+  - name: Build /etc/hosts file
+    blockinfile:
+      create: true
+      path: /etc/hosts
+      block: |
+          {% for host in groups['all'] %}
+          {{ hostvars[host]['ansible_host'] }} {{ host }} {{ host }}.example.org
+          {% endfor %}
+
+  - name: Install Common Packages
+    package:
+      name: "{{ common_packages }}"
+      state: present
+
+  - name: Collect service facts
+    service_facts:
+
+  - name: Stop firewalld
+    service:
+      name: firewalld
+      state: stopped
+      enabled: false
+    when: ansible_facts.services['firewalld.service'] is defined
+
+  - name: Stop iptables
+    service:
+      name: iptables
+      state: stopped
+      enabled: false
+    when: ansible_facts.services['iptables.service'] is defined
+  - name: Disable swap permanently
+    ansible.builtin.systemd:
+      service: swap.target
+      masked: true
+    register: mask_swap
+
+  - name: Disable swap
+    shell: swapoff -a
+    when: mask_swap.changed
+

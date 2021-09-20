@@ -1,0 +1,6 @@
+---
+- name: Install Docker on Ubuntu
+  hosts: appsrv
+  become: true
+  tasks:
+  - 

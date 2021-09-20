@@ -1,155 +1,49 @@
 ---
-- name: Update Caches for Debian Systems
-  hosts: all
-  become: true
-  tasks:
-  - apt:
-      update_cache: true
-      cache_valid_time: 3600
-    when: ansible_os_family == 'Debian'
-
-  - hostname:
-      name: "{{ inventory_hostname }}"
-
-  - name: Build /etc/hosts file
-    blockinfile:
-      create: true
-      path: /etc/hosts
-      block: |
-          {% for host in groups['all'] %}
-          {{ hostvars[host]['ansible_host'] }} {{ host }}
-          {% endfor %}
-
-  - name: Install Common Packages
-    package:
-      name: "{{ common_packages }}"
-      state: present
-
-- name: Install App with ReverseProxy
+- name: Install App
   hosts: appsrv
   become: true
   gather_facts: false
   handlers:
-  - name: restart nginx
-    systemd:
-      name: nginx
-      state: restarted
-
   - name: restart go-app
     systemd:
-      name: "{{ item.name }}"
+      name: "{{ item }}"
       state: restarted
       daemon_reload: true
-    loop: "{{ app_opts }}"
+    loop: "{{ app_names }}"
 
   tasks:
-  - name: Install Nginx
-    package:
-      name: nginx
-      state: present
-
-  - name: Configure Nginx
-    template:
-      src: etc/nginx/sites-enabled/default.j2
-      dest: /etc/nginx/sites-enabled/default
-    notify: restart nginx
-
   - name: Install Go App Binary
     copy:
       src: files/opt/go-app
-      dest: /opt/{{ item.name }}
+      dest: /opt/{{ item }}
       mode: 0755
-    loop: "{{ app_opts }}"
+    loop: "{{ app_names }}"
 
   - name: Configure Service for Go-App
-    template:
-      src: templates/etc/systemd/system/go-app.service.j2
-      dest: /etc/systemd/system/{{ item.name }}.service
     notify:
     - restart go-app
-    loop: "{{ app_opts }}"
+    loop: "{{ app_names }}"
+    loop_control:
+     index_var: my_idx
+    blockinfile:
+      create: true
+      path: /etc/systemd/system/{{ item }}.service
+      block: |
+        [Unit]
+        Description=Go App
+        After=network.target
+
+        [Service]
+        Type=simple
+        ExecStart=/opt/{{ item }} {{ db.user }} {{ db.pass }} {{ db.name }} {{ 8080+my_idx }} {{ db.host }}
+        Restart=always
+
+        [Install]
+        WantedBy=multi-user.target
 
   - name: Enable Go-App Service
     systemd:
-      name: "{{ item.name }}"
+      name: "{{ item }}"
       state: started
       enabled: true
-    loop: "{{ app_opts }}"
-        #    loop:
-        #    - { name: "go-app1", port: "8080" }
-        #    - { name: "go-app2", port: "8081" }
-
-- name: Install LoadBalancer
-  hosts: loadbalancer
-  become: true
-  gather_facts: false
-  handlers:
-  - name: restart haproxy
-    systemd:
-      name: haproxy
-      state: restarted
-
-  tasks:
-  - name: Install HAProxy
-    package:
-      name: haproxy
-      state: present
-
-  - name: Enable HAProxy
-    systemd:
-      name: haproxy
-      state: started
-      enabled: true
-
-  - name: Configure HAProxy
-    template:
-      src: etc/haproxy/haproxy.cfg.j2
-      dest: /etc/haproxy/haproxy.cfg
-    notify: restart haproxy
-
-- name: Install Database
-  hosts: database
-  become: true
-  gather_facts: false
-
-  handlers:
-  - name: restart mariadb
-    systemd:
-      name: mariadb
-      state: restarted
-
-  tasks:
-  - name: Install MariaDB
-    package:
-      name: mariadb-server
-      state: present
-
-  - name: Allow connections on all interfaces
-    blockinfile:
-      block: |
-        [mysqld]
-        bind-address = 0.0.0.0
-      path: /etc/mysql/mariadb.conf.d/99-server.cnf
-      create: true
-    notify:
-    - restart mariadb
-
-  - name: Install PyMySQL
-    package:
-      name: python3-pymysql
-      state: present
-
-  - name: Create database {{ db.name }}
-    mysql_db:
-      name: "{{ db.name }}"
-      state: present
-      login_unix_socket: /var/run/mysqld/mysqld.sock
-
-  - name: Create database user {{ db.user }} with all database privileges
-    mysql_user:
-      name: "{{ db.user }}"
-      host: '%'
-      password: "{{ db.pass }}"
-      priv: '*.*:ALL'
-      state: present
-      login_unix_socket: /var/run/mysqld/mysqld.sock
+    loop: "{{ app_names }}"

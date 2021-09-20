@@ -29,7 +29,7 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 	log.Default()
 	fmt.Fprintf(w, "Moin, ich bin %s auf %s\n", appname, hostname)
 
-	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(db-0:3306)/%s", os.Args[1], os.Args[2], os.Args[3]))
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", os.Args[1], os.Args[2], os.Args[5], os.Args[3]))
 	if err != nil {
 		panic(err)
 	} else if err = db.Ping(); err != nil {

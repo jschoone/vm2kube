@@ -1,0 +1,21 @@
+---
+- name: Generate Certificates
+  hosts: all
+  gather_facts: false
+  tasks:
+  - name: Generate Private Key
+    community.crypto.openssl_privatekey:
+      path: "{{ app_crt_key }}"
+
+  - name: Create CSR
+    community.crypto.openssl_csr:
+      path: "{{ app_crt_csr }}"
+      privatekey_path: "{{ app_crt_key }}"
+
+  - name: Generate Certificates
+    community.crypto.x509_certificate:
+      path: "{{ app_crt }}"
+      privatekey_path: "{{ app_crt_key }}"
+      csr_path: "{{ app_crt_csr }}"
+      provider: selfsigned
+

@@ -1,0 +1,49 @@
+---
+- name: Install LoadBalancer
+  hosts: loadbalancer
+  become: true
+  gather_facts: false
+  handlers:
+  - name: restart haproxy
+    systemd:
+      name: haproxy
+      state: restarted
+
+  tasks:
+  - name: Install HAProxy
+    package:
+      name: haproxy
+      state: present
+
+  - name: Slurp Certificate
+    slurp:
+      src: "{{ app_crt }}"
+    register: crt_content
+
+  - name: Slurp Certificate Key
+    slurp:
+      src: "{{ app_crt_key }}"
+    register: crt_key_content
+
+  - name: Create HAProxy Cert Directory
+    file:
+      path: "{{ haproxy_cert_dir }}"
+      state: directory
+
+  - copy:
+      dest: "{{ haproxy_cert_dir}}/app.pem"
+      content: |
+        {{ crt_content.content | b64decode }}
+        {{ crt_key_content.content | b64decode }}
+
+  - name: Configure HAProxy
+    template:
+      src: etc/haproxy/haproxy.cfg.j2
+      dest: /etc/haproxy/haproxy.cfg
+    notify: restart haproxy
+
+  - name: Enable HAProxy
+    systemd:
+      name: haproxy
+      state: started
+      enabled: true

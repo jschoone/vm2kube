@@ -1,0 +1,47 @@
+---
+- name: Install Database
+  hosts: database
+  become: true
+  gather_facts: false
+
+  handlers:
+  - name: restart mariadb
+    systemd:
+      name: mariadb
+      state: restarted
+
+  tasks:
+  - name: Install MariaDB
+    package:
+      name: mariadb-server
+      state: present
+
+  - name: Allow connections on all interfaces
+    blockinfile:
+      block: |
+        [mysqld]
+        bind-address = 0.0.0.0
+      path: /etc/mysql/mariadb.conf.d/99-server.cnf
+      create: true
+    notify:
+    - restart mariadb
+
+  - name: Install PyMySQL
+    package:
+      name: python3-pymysql
+      state: present
+
+  - name: Create database {{ db.name }}
+    mysql_db:
+      name: "{{ db.name }}"
+      state: present
+      login_unix_socket: /var/run/mysqld/mysqld.sock
+
+  - name: Create database user {{ db.user }} with all database privileges
+    mysql_user:
+      name: "{{ db.user }}"
+      host: '%'
+      password: "{{ db.pass }}"
+      priv: '*.*:ALL'
+      state: present
+      login_unix_socket: /var/run/mysqld/mysqld.sock

@@ -4,7 +4,7 @@ After=network.target
 
 [Service]
 Type=simple
-ExecStart=/opt/{{ item.name }} {{ db.user }} {{ db.pass }} {{ db.name }} {{ item.port }}
+ExecStart=/opt/{{ item }} {{ db.user }} {{ db.pass }} {{ db.name }} {{ loop.index }} {{ db.host }}
 Restart=always
 
 [Install]

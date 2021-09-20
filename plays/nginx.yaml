@@ -1,0 +1,52 @@
+---
+- name: Install ReverseProxy
+  hosts: appsrv
+  become: true
+  gather_facts: false
+  handlers:
+  - name: restart nginx
+    systemd:
+      name: nginx
+      state: restarted
+
+  tasks:
+  - name: Install Nginx
+    package:
+      name: nginx
+      state: present
+
+  - name: Ensure group nginx exists
+    group:
+      name: nginx
+      state: present
+
+  - name: Ensure user nginx exists
+    user:
+      name: nginx
+      state: present
+
+  - name: Create nginx cert dir
+    file:
+      path: "{{ nginx_cert_dir }}"
+      state: directory
+
+  - name: Copy nginx certs
+    copy:
+      remote_src: true
+      src: "{{ item }}"
+      dest: "{{ nginx_cert_dir }}"
+    loop:
+    - "{{ app_crt }}"
+    - "{{ app_crt_key }}"
+
+  - name: Enable nginx
+    systemd:
+      name: nginx
+      state: started
+      enabled: true
+
+  - name: Configure Nginx
+    template:
+      src: etc/nginx/nginx.conf.j2
+      dest: /etc/nginx/nginx.conf
+    notify: restart nginx
