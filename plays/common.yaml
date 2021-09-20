@@ -16,14 +16,12 @@
   - hostname:
       name: "{{ inventory_hostname }}"
 
-  - name: Build /etc/hosts file
-    blockinfile:
-      create: true
-      path: /etc/hosts
-      block: |
-          {% for host in groups['all'] %}
-          {{ hostvars[host]['ansible_host'] }} {{ host }} {{ host }}.example.org
-          {% endfor %}
+  - name: Set resolv.conf
+    copy:
+      dest: /etc/resolv.conf
+      content: |
+        nameserver {{ hostvars[groups['database'] | first]['ansible_host'] }}
+        nameserver {{ dns_forwarder }}
 
   - name: Install Common Packages
     package:

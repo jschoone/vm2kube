@@ -62,9 +62,11 @@ Vagrant.configure("2") do |config|
             "appsrv" => ["appsrv[0:#{APPSRVNODES-1}]"],
             "loadbalancer" => ["lb[0:#{LBNODES-1}]"],
             "database" => ["db[0:#{DBNODES-1}]"],
+            "dns" => ["db[0:#{DBNODES-1}]"],
+            "registry" => ["db[0:#{DBNODES-1}]"],
           }
           ansible.limit = "all"
-          ansible.playbook = "plays/app.yaml"
+          ansible.playbook = "plays/site.yaml"
         end
       end
     end

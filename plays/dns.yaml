@@ -1,0 +1,49 @@
+---
+- name: Install DNS Server
+  hosts: dns
+  become: true
+  handlers:
+  - name: restart dnsmasq
+    systemd:
+      name: dnsmasq
+      state: restarted
+
+  tasks:
+  - name: Collect service facts
+    service_facts:
+
+  - name: Stop resolved
+    service:
+      name: systemd-resolved
+      state: stopped
+      enabled: false
+    when: ansible_facts.services['systemd-resolved.service'] is defined
+
+  - name: Install dnsmasq
+    package:
+      name: dnsmasq
+      state: present
+
+  - name: Configure dnsmasq
+    copy:
+      dest: /etc/dnsmasq.d/vm2app.conf
+      content: |
+        server={{ dns_forwarder }}
+    notify: restart dnsmasq
+
+  - name: Enable dnsmasq
+    systemd:
+      name: dnsmasq
+      enabled: true
+      state: started
+
+  - name: Build /etc/hosts file
+    blockinfile:
+      create: true
+      path: /etc/hosts
+      block: |
+          {% for host in groups['all'] %}
+          {{ hostvars[host]['ansible_host'] }} {{ host }} {{ host }}.example.org
+          {% endfor %}
+          {{ hostvars[groups['registry'][0]]['ansible_host'] }} registry.example.org
+    notify: restart dnsmasq

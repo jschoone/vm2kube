@@ -5,11 +5,7 @@
   gather_facts: false
   become: true
   tasks:
-  - name: Build /etc/hosts file
-    blockinfile:
-      create: true
-      path: /etc/hosts
-      block: |
-          {% for host in groups['all'] %}
-          {{ hostvars[host]['ansible_host'] }} {{ host }} {{ host }}.example.org
-          {% endfor %}
+  - lineinfile:
+      path: /etc/resolv.conf
+      insertbefore: BOF
+      line: nameserver {{ hostvars[groups['dns'][0]]['ansible_host'] }}

@@ -3,8 +3,12 @@
 - import_playbook: certs.yaml
 - import_playbook: app.yaml
 - import_playbook: database.yaml
-  when: db_enabled
+  #  when: db_enabled
 - import_playbook: nginx.yaml
   when: nginx_enabled
 - import_playbook: loadbalancer.yaml
-  when: lb_enabled
+  #  when: lb_enabled
+- import_playbook: dns.yaml
+  when: dns_enabled
+- import_playbook: registry.yaml
+  when: registry_enabled

@@ -18,4 +18,5 @@
       privatekey_path: "{{ app_crt_key }}"
       csr_path: "{{ app_crt_csr }}"
       provider: selfsigned
-
+      subject_alt_name:
+        - dns:registry.example.org

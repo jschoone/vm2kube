@@ -1,8 +1,9 @@
 ---
 nginx_enabled: false
-db_enabled: false
-lb_enabled: false
-
+db_enabled: true
+lb_enabled: true
+dns_enabled: true
+registry_enabled: true
 
 
 app_names:
@@ -40,3 +41,9 @@ _common_packages:
 common_packages:
 - vim
 - "{{ pyopenssl_pkg }}"
+
+dns_forwarder: 141.1.1.1
+
+docker_py:
+- python3-docker
+- python3-distutils

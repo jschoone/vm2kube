@@ -1,0 +1,20 @@
+---
+- name: Install Docker on Ubuntu
+  block:
+  - name: Install Docker
+    package:
+      name: docker.io
+      state: present
+
+- name: Ensure Group Docker exists
+  group:
+    name: docker
+    state: present
+
+- name: Ensure User {{ ansible_user }} is in Group Docker
+  user:
+    name: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    groups: docker
+    append: true
+    state: present
