@@ -4,6 +4,7 @@ db_enabled: true
 lb_enabled: true
 dns_enabled: true
 registry_enabled: true
+docker_enabled: true
 
 
 app_names:

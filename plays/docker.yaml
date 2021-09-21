@@ -1,0 +1,36 @@
+---
+- name: Run App in Docker
+  hosts: appsrv
+  become: true
+  tasks:
+  - name: Disable Go-App Service
+    systemd:
+      name: "{{ item }}"
+      state: stopped
+      enabled: false
+    loop: "{{ app_names }}"
+
+  - name: Configure Service for Go-App
+    loop: "{{ app_names }}"
+    file:
+      path: /etc/systemd/system/{{ item }}.service
+      state: absent
+
+  - include_tasks: install_docker.yaml
+
+  - name: Run Apps in Docker
+    docker_container:
+      name: "vm2kube_{{ item }}"
+      image: registry.example.org/vm2kube:0.1
+      restart_policy: always
+      state: started
+      container_default_behavior: no_defaults
+      ports:
+      - "{{ 8080+my_idx }}:8080"
+      env:
+        APPNAME: "{{ item }}"
+    loop: "{{ app_names }}"
+    loop_control:
+     index_var: my_idx
+    tags:
+    - run_apps

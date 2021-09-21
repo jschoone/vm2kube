@@ -4,7 +4,9 @@
   gather_facts: false
   become: true
   vars:
-    proxy: false
+    port: 8080
   tasks:
   - debug:
-      msg: "{{ ansible_user }}"
+      msg: "{{ inventory_hostname | last }}"
+  - debug:
+      msg: "{{ port }}"

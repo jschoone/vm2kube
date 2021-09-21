@@ -5,6 +5,54 @@
     package:
       name: docker.io
       state: present
+  - name: Install Docker Python Libs
+    package:
+      name: "{{ docker_py }}"
+      state: present
+  when: ansible_os_family == 'Debian'
+
+- name: Install Docker on RedHat
+  block:
+  - name: Install Docker Repository
+    yum_repository:
+      name: docker-ce-stable
+      description: docker-ce-stable
+      baseurl: https://download.docker.com/linux/centos/$releasever/$basearch/stable
+      enabled: 1
+      gpgcheck: 1
+      gpgkey: https://download.docker.com/linux/centos/gpg
+
+  - name: Install Docker
+    package:
+      name: docker-ce
+      state: present
+
+  - name: Install Docker Python Libs
+    package:
+      name: python3-docker
+      state: present
+  when: ansible_os_family == 'RedHat'
+
+- name: Ensure /etc/docker exists
+  file:
+    path: /etc/docker
+    state: directory
+
+- name: Add Insecure Registries
+  copy:
+    dest: /etc/docker/daemon.json
+    content: |
+      {
+         "insecure-registries" : ["registry.example.org"]
+      }
+  register: insecure_regs
+
+- name: Restart Docker
+  systemd:
+    name: docker
+    state: restarted
+    daemon_reload: true
+  when: insecure_regs.changed
 
 - name: Ensure Group Docker exists
   group:
@@ -18,3 +66,12 @@
     groups: docker
     append: true
     state: present
+
+- name: Run Registry
+  docker_container:
+    name: registry
+    image: registry:2
+    restart_policy: always
+    state: started
+    ports:
+    - "5000:5000"

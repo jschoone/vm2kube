@@ -1,3 +1,4 @@
+#jinja2: lstrip_blocks: 'True'
 global
         log /dev/log    local0
         log /dev/log    local1 notice
@@ -7,6 +8,7 @@ global
         user haproxy
         group haproxy
         daemon
+        tune.ssl.default-dh-param 2048
 
         # Default SSL material locations
         ca-base /etc/ssl/certs
@@ -30,7 +32,10 @@ frontend appsrv_frontend
     http-request set-header X-Forwarded-For %[src]
     #reqadd X-Forwarded-Proto:\ https
     option http-server-close
-    default_backend appsrv_backend_https
+    default_backend appsrv_backend
+    {% for app in app_names %}
+    use_backend {{ app }}_backend if { path -i -m beg /{{ app }} }
+    {% endfor %}
 
 backend appsrv_backend
     mode http
@@ -38,3 +43,15 @@ backend appsrv_backend
     {% for host in groups['appsrv'] %}
     server {{ host }} {{ host }}:80 check
     {% endfor %}
+
+{% for app in app_names %}
+{% set outer_loop = loop %}
+backend {{ app }}_backend
+  mode http
+  balance random
+  {% for host in groups['appsrv'] %}
+  server {{ host }} {{ host }}:{{ 8080+outer_loop.index-1 }} check
+  {% endfor %}
+
+{% endfor %}
+

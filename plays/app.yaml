@@ -34,6 +34,7 @@
         After=network.target
 
         [Service]
+        Environment=APPNAME={{ item }}
         Type=simple
         ExecStart=/opt/{{ item }} {{ db.user }} {{ db.pass }} {{ db.name }} {{ 8080+my_idx }} {{ db.host }}
         Restart=always

@@ -64,6 +64,7 @@ Vagrant.configure("2") do |config|
             "database" => ["db[0:#{DBNODES-1}]"],
             "dns" => ["db[0:#{DBNODES-1}]"],
             "registry" => ["db[0:#{DBNODES-1}]"],
+            "localhost" => ["localhost"],
           }
           ansible.limit = "all"
           ansible.playbook = "plays/site.yaml"

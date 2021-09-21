@@ -2,6 +2,7 @@
 - import_playbook: common.yaml
 - import_playbook: certs.yaml
 - import_playbook: app.yaml
+  when: not docker_enabled
 - import_playbook: database.yaml
   #  when: db_enabled
 - import_playbook: nginx.yaml
@@ -12,3 +13,5 @@
   when: dns_enabled
 - import_playbook: registry.yaml
   when: registry_enabled
+- import_playbook: docker.yaml
+  when: docker_enabled

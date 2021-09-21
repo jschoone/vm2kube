@@ -1,5 +1,5 @@
 ---
-- name: Debug
+- name: Add DNS Server local
   hosts: localhost
   connection: local
   gather_facts: false

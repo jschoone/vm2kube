@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path"
 
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -25,7 +24,8 @@ func HelloHandler(w http.ResponseWriter, r *http.Request) {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	appname := path.Base(os.Args[0])
+	//appname := path.Base(os.Args[0])
+	appname := os.Getenv("APPNAME")
 	log.Default()
 	fmt.Fprintf(w, "Moin, ich bin %s auf %s\n", appname, hostname)
 

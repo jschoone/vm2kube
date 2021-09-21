@@ -11,10 +11,6 @@
 
   tasks:
   - include_tasks: install_docker.yaml
-  - name: Install Docker Python Libs
-    package:
-      name: "{{ docker_py }}"
-      state: present
 
   - name: Run Registry
     docker_container:
@@ -22,6 +18,7 @@
       image: registry:2
       restart_policy: always
       state: started
+      container_default_behavior: no_defaults
       ports:
       - "5000:5000"
 
@@ -63,3 +60,25 @@
       name: haproxy
       state: started
       enabled: true
+
+
+  - name: Build vm2kube Image
+    block:
+    - name: Copy App with Source and Dockerfile
+      copy:
+        src: files/opt/
+        dest: /opt/
+
+    - name: Create Dockerfile
+      template:
+        src: opt/Dockerfile.j2
+        dest: /opt/Dockerfile
+
+    - name: Build an image and push it to a private repo
+      community.docker.docker_image:
+        build:
+          path: /opt
+        name: registry.example.org/vm2kube:0.1
+        tag: v1
+        push: yes
+        source: build

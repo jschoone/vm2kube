@@ -1,0 +1,7 @@
+FROM golang
+ENV APPNAME=app
+COPY . /app
+WORKDIR /app
+RUN go build go-app.go
+EXPOSE 8080
+CMD ["/app/go-app","{{ db.user }}","{{ db.pass }}","{{ db.name }}","8080", "{{ db.host }}"]
