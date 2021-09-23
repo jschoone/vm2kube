@@ -1,11 +1,12 @@
 ---
+- name: Gather facts from DNS Server
+  hosts: dns
+
 - name: Add DNS Server local
   hosts: localhost
-  connection: local
-  gather_facts: false
   become: true
   tasks:
-  - lineinfile:
+  - blockinfile:
       path: /etc/resolv.conf
       insertbefore: BOF
-      line: nameserver {{ hostvars[groups['dns'][0]]['ansible_host'] }}
+      block: nameserver {{ hostvars[groups['dns'][0]]['ansible_facts'][internal_interface]['ipv4']['address'] }}

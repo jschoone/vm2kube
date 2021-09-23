@@ -1,0 +1,27 @@
+---
+- name: Install NFS Server
+  hosts: storage
+  become: true
+  gather_facts: false
+  handlers:
+  - name: restart nfs-server
+    systemd:
+      name: nfs-server
+      state: restarted
+
+  tasks:
+  - name: Install nfs-kernel-server
+    package:
+      name: nfs-kernel-server
+      state: present
+
+  - name: Make sure {{ nfs_dir }} exists
+    file:
+      path: "{{ nfs_dir }}"
+      state: directory
+
+  - name: Configure exports file
+    lineinfile:
+      path: /etc/exports
+      line: "{{ nfs_dir }} *(rw,sync,no_root_squash,no_all_squash)"
+    notify: restart nfs-server

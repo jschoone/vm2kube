@@ -3,34 +3,95 @@
   hosts: appsrv
   become: true
   tasks:
-  - name: Disable Go-App Service
-    systemd:
-      name: "{{ item }}"
-      state: stopped
-      enabled: false
-    loop: "{{ app_names }}"
+  - name: Check if service files exist
+    stat:
+      path: /etc/systemd/system/{{ app_names[0] }}.service
+    register: app_svc
 
-  - name: Configure Service for Go-App
-    loop: "{{ app_names }}"
-    file:
-      path: /etc/systemd/system/{{ item }}.service
-      state: absent
+  - name: Remove Go-App systemd Services
+    block:
+    - name: Disable Go-App Service
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+        enabled: false
+      loop: "{{ app_names }}"
+
+    - name: Configure Service for Go-App
+      loop: "{{ app_names }}"
+      file:
+        path: /etc/systemd/system/{{ item }}.service
+        state: absent
+    when: app_svc.stat.exists == true
 
   - include_tasks: install_docker.yaml
 
-  - name: Run Apps in Docker
-    docker_container:
-      name: "vm2kube_{{ item }}"
-      image: registry.example.org/vm2kube:0.1
-      restart_policy: always
-      state: started
-      container_default_behavior: no_defaults
-      ports:
-      - "{{ 8080+my_idx }}:8080"
-      env:
-        APPNAME: "{{ item }}"
-    loop: "{{ app_names }}"
-    loop_control:
-     index_var: my_idx
-    tags:
-    - run_apps
+  - name: Run Docker Container
+    block:
+    - name: Run Apps in Docker
+      docker_container:
+        name: "vm2kube_{{ item }}"
+        image: "{{ app_image }}:{{ app_version }}"
+        restart_policy: always
+        state: started
+        container_default_behavior: no_defaults
+        ports:
+        - "{{ 8080+my_idx }}:8080"
+        env:
+          APPNAME: "{{ item }}"
+      loop: "{{ app_names }}"
+      loop_control:
+       index_var: my_idx
+      tags:
+      - run_apps
+
+    - name: Run nginx in Docker
+      block:
+      - name: Remove nginx
+        package:
+          name: nginx
+          state: absent
+      - name: Collect service facts
+        service_facts:
+
+      - name: Stop nginx
+        service:
+          name: nginx
+          state: stopped
+          enabled: false
+        when: ansible_facts.services['nginx.service'] is defined
+
+      - name: Create nginx cert dir
+        file:
+          path: "{{ nginx_cert_dir }}"
+          state: directory
+
+      - name: Copy nginx certs
+        copy:
+          remote_src: true
+          src: "{{ item }}"
+          dest: "{{ nginx_cert_dir }}"
+        loop:
+        - "{{ app_crt }}"
+        - "{{ app_crt_key }}"
+
+      - name: Copy nginx.conf to mount in Container
+        template:
+          src: etc/nginx/nginx.conf.j2
+          dest: /var/tmp/nginx.conf
+
+      - name: Run Apps in Docker
+        docker_container:
+          name: "vm2kube_nginx"
+          image: "nginx"
+          restart_policy: always
+          state: started
+          container_default_behavior: no_defaults
+          ports:
+          - "80:80"
+          - "443:443"
+          volumes:
+          - /var/tmp/nginx.conf:/etc/nginx/nginx.conf
+          - "{{ nginx_cert_dir }}:{{ nginx_cert_dir }}"
+      when: nginx2docker
+    when: not kubernetes_enabled

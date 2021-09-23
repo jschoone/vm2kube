@@ -39,14 +39,14 @@
     - "{{ app_crt }}"
     - "{{ app_crt_key }}"
 
-  - name: Enable nginx
-    systemd:
-      name: nginx
-      state: started
-      enabled: true
-
   - name: Configure Nginx
     template:
       src: etc/nginx/nginx.conf.j2
       dest: /etc/nginx/nginx.conf
     notify: restart nginx
+
+  - name: Enable nginx
+    systemd:
+      name: nginx
+      state: started
+      enabled: true

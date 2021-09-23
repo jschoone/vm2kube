@@ -1,27 +1,36 @@
 ---
-nginx_enabled: false
-db_enabled: true
-lb_enabled: true
-dns_enabled: true
-registry_enabled: true
-docker_enabled: true
-
+db_enabled: 1
+dns_enabled: 1
+lb_enabled: 0
+nginx_enabled: 0
+registry_enabled: 0
+docker_enabled: 0
+storage_enabled: 0
+nginx2docker: 0
+kubernetes_enabled: 0
 
 app_names:
 - "app"
-- "osna"
+
+app_version: 0.1
+app_image: registry.example.org/vm2kube
 
 db:
   user: app
   pass: app
   name: app
-  host: "{{ hostvars[groups['database'] | first]['ansible_host'] | default('db') }}"
+  host: "{{ hostvars[groups['database'][0]]['inventory_hostname'] }}"
+
+internal_interface: eth0
 
 cert_path: /var/tmp
 
-app_crt_key: "{{ cert_path }}/app.key"
-app_crt_csr: "{{ cert_path }}/app.csr"
-app_crt: "{{ cert_path }}/app.crt"
+crt: "app.crt"
+crt_csr: "app.csr"
+crt_key: "app.key"
+app_crt_key: "{{ cert_path }}/{{ crt_key }}"
+app_crt_csr: "{{ cert_path }}/{{ crt_csr }}"
+app_crt: "{{ cert_path }}/{{ crt }}"
 
 nginx_conf:
   Debian: "/etc/nginx/sites-enabled/default"
@@ -34,7 +43,14 @@ haproxy_cert_dir: /etc/haproxy/tls
 _pyopenssl_pkg:
   Debian: "python3-openssl"
   RedHat: "python3-pyOpenSSL"
+  Archlinux: "python-pyopenssl"
 pyopenssl_pkg: "{{ _pyopenssl_pkg[ansible_os_family] }}"
+
+_nfsclient_pkg:
+  Debian: "nfs-common"
+  RedHat: "nfs-utils"
+  Archlinux: "nfs-utils"
+nfsclient_pkg: "{{ _nfsclient_pkg[ansible_os_family] }}"
 
 _common_packages:
 - vim
@@ -42,9 +58,14 @@ _common_packages:
 common_packages:
 - vim
 - "{{ pyopenssl_pkg }}"
+- "{{ nfsclient_pkg }}"
 
 dns_forwarder: 141.1.1.1
 
 docker_py:
 - python3-docker
 - python3-distutils
+
+timezone: Europe/Berlin
+
+nfs_dir: /mnt/storage

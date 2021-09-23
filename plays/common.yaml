@@ -1,6 +1,6 @@
 ---
 - name: Common Playbook
-  hosts: all
+  hosts: all:!localhost
   become: true
   tasks:
   - name: Disable SELinux
@@ -8,25 +8,11 @@
       state: permissive
       policy: targeted
     when: ansible_os_family == "RedHat"
-  - apt:
-      update_cache: true
-      cache_valid_time: 86400
-    when: ansible_os_family == 'Debian'
 
-  - hostname:
-      name: "{{ inventory_hostname }}"
+  - name: Set timezone to {{ timezone }}
+    timezone:
+      name: "{{ timezone }}"
 
-  - name: Set resolv.conf
-    copy:
-      dest: /etc/resolv.conf
-      content: |
-        nameserver {{ hostvars[groups['database'] | first]['ansible_host'] }}
-        nameserver {{ dns_forwarder }}
-
-  - name: Install Common Packages
-    package:
-      name: "{{ common_packages }}"
-      state: present
 
   - name: Collect service facts
     service_facts:
@@ -44,6 +30,14 @@
       state: stopped
       enabled: false
     when: ansible_facts.services['iptables.service'] is defined
+
+  - name: Stop systemd-resolved
+    service:
+      name: systemd-resolved
+      state: stopped
+      enabled: false
+    when: ansible_os_family == "Archlinux"
+
   - name: Disable swap permanently
     ansible.builtin.systemd:
       service: swap.target
@@ -53,4 +47,38 @@
   - name: Disable swap
     shell: swapoff -a
     when: mask_swap.changed
+
+  - apt:
+      update_cache: true
+      cache_valid_time: 86400
+    when: ansible_os_family == 'Debian'
+
+  - pacman:
+      update_cache: true
+    when: ansible_os_family == 'Archlinux'
+
+  - package:
+     name: inetutils
+     state: present
+    when: ansible_os_family == 'Archlinux'
+
+  - hostname:
+      name: "{{ inventory_hostname }}"
+      use: systemd
+
+  - lineinfile:
+      path: /etc/hosts
+      line: "{{ ansible_facts[internal_interface]['ipv4']['address'] }} {{ inventory_hostname }}"
+
+  - name: Set resolv.conf
+    copy:
+      dest: /etc/resolv.conf
+      content: |
+        nameserver {{ hostvars[groups['database'][0]]['ansible_facts'][internal_interface]['ipv4']['address'] }}
+        nameserver {{ dns_forwarder }}
+
+  - name: Install Common Packages
+    package:
+      name: "{{ common_packages }}"
+      state: present
 

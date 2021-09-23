@@ -1,0 +1,8 @@
+---
+- name: Arch
+  hosts: all
+  become: true
+  gather_facts: false
+  tasks:
+  - name: Btw I use Arch
+    debug: msg="Btw I use Arch"

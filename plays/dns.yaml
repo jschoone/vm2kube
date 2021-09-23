@@ -43,9 +43,12 @@
       path: /etc/hosts
       block: |
           {% for host in groups['all'] %}
-          {{ hostvars[host]['ansible_host'] }} {{ host }} {{ host }}.example.org
+          {{ hostvars[host]['ansible_facts'][internal_interface]['ipv4']['address'] }} {{ host }} {{ host }}.example.org
           {% endfor %}
-          {{ hostvars[groups['registry'][0]]['ansible_host'] }} registry.example.org
+          {% if lb_enabled %}
+          {{ hostvars[groups['loadbalancer'][0]]['ansible_facts'][internal_interface]['ipv4']['address'] }} registry.example.org
+          {{ hostvars[groups['loadbalancer'][0]]['ansible_facts'][internal_interface]['ipv4']['address'] }} storage.example.org
+          {% endif %}
     notify: restart dnsmasq
 
 - import_playbook: local_hosts.yaml

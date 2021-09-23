@@ -1,0 +1,18 @@
+---
+- name: Stop Docker Container
+  hosts: appsrv
+  become: true
+  tasks:
+  - debug: var=item
+    loop:
+    - "{{ app_names }}"
+  - name: Stop Docker Container
+    docker_container:
+      name: "vm2kube_{{ item }}"
+      state: absent
+    loop: "{{ app_names }}"
+
+  - name: Stop nginx in Docker
+    docker_container:
+      name: "vm2kube_nginx"
+      state: absent

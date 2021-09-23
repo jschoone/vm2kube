@@ -1,12 +1,12 @@
 ---
 - name: Debug
-  hosts: registry
+  hosts: appsrv
   gather_facts: false
   become: true
-  vars:
-    port: 8080
   tasks:
-  - debug:
-      msg: "{{ inventory_hostname | last }}"
-  - debug:
-      msg: "{{ port }}"
+  - name: Check if service files exist
+    stat:
+      path: /etc/systemd/system/{{ app_names[0] }}.service
+    register: app_svc
+
+  - debug: var=app_svc.stat.exists

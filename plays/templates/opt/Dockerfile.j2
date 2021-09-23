@@ -1,7 +1,12 @@
 FROM golang
 ENV APPNAME=app
-COPY . /app
 WORKDIR /app
-RUN go build go-app.go
+COPY go-app.go go.mod go.sum ./
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o go-app
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+COPY --from=0 /app ./
 EXPOSE 8080
-CMD ["/app/go-app","{{ db.user }}","{{ db.pass }}","{{ db.name }}","8080", "{{ db.host }}"]
+CMD ["./go-app","{{ db.user }}","{{ db.pass }}","{{ db.name }}","8080", "{{ db.host }}"]

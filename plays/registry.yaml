@@ -22,63 +22,70 @@
       ports:
       - "5000:5000"
 
-  - name: Install HAProxy
-    package:
-      name: haproxy
-      state: present
+        #  - name: Install HAProxy
+        #    package:
+        #      name: haproxy
+        #      state: present
+        #
+        #  - name: Slurp Certificate
+        #    slurp:
+        #      src: "{{ app_crt }}"
+        #    register: crt_content
+        #
+        #  - name: Slurp Certificate Key
+        #    slurp:
+        #      src: "{{ app_crt_key }}"
+        #    register: crt_key_content
+        #
+        #  - name: Create HAProxy Cert Directory
+        #    file:
+        #      path: "{{ haproxy_cert_dir }}"
+        #      state: directory
+        #
+        #  - copy:
+        #      dest: "{{ haproxy_cert_dir}}/app.pem"
+        #      content: |
+        #        {{ crt_content.content | b64decode }}
+        #        {{ crt_key_content.content | b64decode }}
+        #    notify: restart haproxy
+        #
+        #  - name: Configure HAProxy
+        #    template:
+        #      src: etc/haproxy/registry.cfg.j2
+        #      dest: /etc/haproxy/haproxy.cfg
+        #    notify: restart haproxy
+        #
+        #  - name: Enable HAProxy
+        #    systemd:
+        #      name: haproxy
+        #      state: started
+        #      enabled: true
 
-  - name: Slurp Certificate
-    slurp:
-      src: "{{ app_crt }}"
-    register: crt_content
 
-  - name: Slurp Certificate Key
-    slurp:
-      src: "{{ app_crt_key }}"
-    register: crt_key_content
-
-  - name: Create HAProxy Cert Directory
-    file:
-      path: "{{ haproxy_cert_dir }}"
-      state: directory
-
-  - copy:
-      dest: "{{ haproxy_cert_dir}}/app.pem"
-      content: |
-        {{ crt_content.content | b64decode }}
-        {{ crt_key_content.content | b64decode }}
-    notify: restart haproxy
-
-  - name: Configure HAProxy
-    template:
-      src: etc/haproxy/registry.cfg.j2
-      dest: /etc/haproxy/haproxy.cfg
-    notify: restart haproxy
-
-  - name: Enable HAProxy
-    systemd:
-      name: haproxy
-      state: started
-      enabled: true
-
-
-  - name: Build vm2kube Image
-    block:
+- name: Build vm2kube Image
+  hosts: appsrv[0]
+  become: true
+  tags:
+  - build
+  tasks:
+  - include_tasks: install_docker.yaml
+  - block:
     - name: Copy App with Source and Dockerfile
       copy:
         src: files/opt/
-        dest: /opt/
+        dest: /opt/vm2kube/
 
     - name: Create Dockerfile
       template:
         src: opt/Dockerfile.j2
-        dest: /opt/Dockerfile
+        dest: /opt/vm2kube/Dockerfile
 
     - name: Build an image and push it to a private repo
       community.docker.docker_image:
         build:
-          path: /opt
-        name: registry.example.org/vm2kube:0.1
-        tag: v1
+          path: /opt/vm2kube
+        name: "{{ app_image }}"
+        tag: "{{ app_version }}"
         push: yes
         source: build
+    when: not kubernetes_enabled

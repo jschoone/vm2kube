@@ -33,6 +33,7 @@ frontend appsrv_frontend
     #reqadd X-Forwarded-Proto:\ https
     option http-server-close
     default_backend appsrv_backend
+    use_backend registry_backend if { hdr_dom(host) -m beg registry.example.org }
     {% for app in app_names %}
     use_backend {{ app }}_backend if { path -i -m beg /{{ app }} }
     {% endfor %}
@@ -55,3 +56,7 @@ backend {{ app }}_backend
 
 {% endfor %}
 
+backend registry_backend
+  mode http
+  balance random
+  server registry {{ db.host }}:5000 check

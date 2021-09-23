@@ -1,6 +1,6 @@
 ---
 - name: Generate Certificates
-  hosts: all
+  hosts: all:!localhost
   gather_facts: false
   tasks:
   - name: Generate Private Key

@@ -28,8 +28,8 @@ http {
     server {
       listen 443 ssl;
       listen [::]:443 ssl;
-      ssl_certificate     {{ app_crt }};
-      ssl_certificate_key {{ app_crt_key }};
+      ssl_certificate     {{ nginx_cert_dir }}/{{ crt }};
+      ssl_certificate_key {{ nginx_cert_dir }}/{{ crt_key }};
 
       access_log /var/log/nginx/reverse-access.log;
       error_log /var/log/nginx/reverse-error.log;

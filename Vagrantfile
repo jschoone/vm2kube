@@ -1,6 +1,3 @@
-ENV['VAGRANT_NO_PARALLEL'] = 'yes'
-ENV['VAGRANT_DEFAULT_PROVIDER'] = 'libvirt'
-
 Vagrant.configure("2") do |config|
   config.env.enable
 
@@ -64,7 +61,7 @@ Vagrant.configure("2") do |config|
             "database" => ["db[0:#{DBNODES-1}]"],
             "dns" => ["db[0:#{DBNODES-1}]"],
             "registry" => ["db[0:#{DBNODES-1}]"],
-            "localhost" => ["localhost"],
+            "storage" => ["lb[0:#{LBNODES-1}]"],
           }
           ansible.limit = "all"
           ansible.playbook = "plays/site.yaml"

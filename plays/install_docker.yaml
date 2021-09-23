@@ -33,6 +33,29 @@
       state: present
   when: ansible_os_family == 'RedHat'
 
+- name: Install Docker on Arch
+  block:
+  - name: Install Docker
+    package:
+      name: docker
+      state: present
+
+  - name: Install Docker Python Libs
+    package:
+      name: python-docker
+      state: present
+
+  - name: Collect service facts
+    service_facts:
+
+  - name: Stop resolved
+    service:
+      name: systemd-resolved
+      state: stopped
+      enabled: false
+    when: ansible_facts.services['systemd-resolved.service'] is defined
+  when: ansible_os_family == 'Archlinux'
+
 - name: Ensure /etc/docker exists
   file:
     path: /etc/docker
@@ -54,6 +77,12 @@
     daemon_reload: true
   when: insecure_regs.changed
 
+- name: Enable Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: true
+
 - name: Ensure Group Docker exists
   group:
     name: docker
@@ -66,12 +95,3 @@
     groups: docker
     append: true
     state: present
-
-- name: Run Registry
-  docker_container:
-    name: registry
-    image: registry:2
-    restart_policy: always
-    state: started
-    ports:
-    - "5000:5000"
